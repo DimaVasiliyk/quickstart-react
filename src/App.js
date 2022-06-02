@@ -1,116 +1,139 @@
-import React from "react";
-import "./App.css";
+import React, { useEffect } from 'react';
+import { makeStyles } from '@material-ui/core/styles';
+import Paper from '@material-ui/core/Paper';
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableContainer from '@material-ui/core/TableContainer';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
 import mondaySdk from "monday-sdk-js";
 import "monday-ui-react-core/dist/main.css";
-//Explore more Monday React Components here: https://style.monday.com/
-import AttentionBox from "monday-ui-react-core/dist/AttentionBox.js";
+const axios = require('axios');
 
+let rows = [];
 const monday = mondaySdk();
 
-class App extends React.Component {
-  constructor(props) {
-    super(props);
-    // Default state
-    this.state = {
-      settings: {},
-      context:{},
-      name: "",
-      email:{},
-      value: null,
+const useStyles = makeStyles({
+  root: {
+    width: '100%',
+  },
+  container: {
+    maxHeight: '100vh',
+  },
+});
 
-    };
-    this.LoginChange = this.LoginChange.bind(this);
-    this.PasswordChange = this.PasswordChange.bind(this);
-  }
-
-  LoginChange(event) {
-    this.setState({value: event.target.value});
-  }
-
-  PasswordChange(event) {
-    this.setState({value: event.target.value});
-  }
-
-  handleSubmit(event) {
-    console.log('Отправленное имя: ' + this.state.value);
-    event.preventDefault();
-  }
-
-  componentDidMount() {
-    monday.listen("settings", (res) => {
-      this.setState({ settings: res.data });
-      monday
-        .api(
-          `query ($boardIds: [Int]) { boards (ids:$boardIds) { name items(limit:1) { name column_values { title text } } } }`,
-          { variables: { boardIds: this.state.settings.boardIds } }
-        )
-        .then((res) => {
-          this.setState({ boardData: res.data });
-        });
-    });
-
-    monday.listen("context", (res) => {
-      this.setState({ context: res.data });
-      monday
-        .api(
-          `query ($boardIds: [Int]) { boards (ids:$boardIds) { name items(limit:1) { name column_values { title text } } } }`,
-          { variables: { boardIds: this.state.context.boardIds } }
-        )
-        .then((res) => {
-          this.setState({ boardData: res.data });
-        });
-    });
+const columns = [
+  { id: 'status', label: 'Status', minWidth: 50 },
+  { id: 'addedAt', label: 'AddedAt', minWidth: 100 },
+  { id: 'email', label: 'Email', minWidth: 170 },
+  { id: 'name', label: 'Name', minWidth: 100 },
+  { id: 'riskScore', label: 'Risk Score', minWidth: 170 },
+  { id: 'warrantyVerification', label: 'Warranty Verification', minWidth: 100 },
+  { id: 'statusemail', label: 'Status', minWidth: 170 },
+  { id: 'pushretries', label: 'Push Retries', minWidth: 100 },
+];
 
 
-    monday.api(`query { me { email } }`).then(res => {
-      this.setState({ email: res.data.me.email });
-    });
 
-    monday.listen("me", (res) => {
-      this.setState({ me: res.data });
-      console.log(res.data);
-      monday
-        .api(
-          `query ($meIds: [Int]) { me (ids:$meIds)  { is_guest created_at name id} {email} }`,
-          { variables: { meIds: this.state.me.meIds } }
-        )
-        .then((res) => {
-          this.setState({ meData: res.data });
-        });
-    });
-  }
+function createData(status, addedAt, email,name, securityScore, riskScore, warrantyVerification,statusemail ,pushretries) {
+    status = <div style={{height:"20px", width:"20px", borderRadius:"100%", backgroundColor: status? "#36c6d3": "#ed6870"}}></div>
+    let x = Math.round(securityScore)
+    riskScore = <div style={{display:"flex"}}><div style={{marginRight:"10px", width:"30px", textAlign:"center", color:"white", borderRadius:"8px", backgroundColor:"red"}}>{x}</div><div>{riskScore}</div></div>
+    return { status, addedAt, email,name, riskScore, warrantyVerification,statusemail ,pushretries};
+}
 
-  render() {
-    return (
-      <div
-        className="App"
-        style={{ background: this.state.settings.background }}
-      >
-        <form onSubmit={this.handleSubmit}>
-        <label>
-          Имя:
-          <input type="text" value={this.state.value} onChange={this.handleChange} />
-          <input type="password" value={this.state.value} onChange={this.handleChange} />
-        </label>
-        <input type="submit" value="Отправить" />
-      </form>
-      {/* {JSON.stringify(this.state.boardData, null, 2)} */}
-        <AttentionBox
-          title={this.state.settings.attentionBoxTitle || "Hello monday.apps"}
-          text={
-            this.state.settings.attentionBoxMessage ||
-            "You should be able to edit the info that appears here using the fields you've set up previously in the View settings :) "
-          }
-          type={this.state.settings.attentionBoxType || "success"}
-        />
 
-        <br></br>
-        {JSON.stringify(this.state.email, null, 2)}
-        <div>
-        </div>
-      </div>
-    );
+
+
+function createRow(data){
+  for(let i=0;i<data.length; i++){
+    console.log(data[i].Status);
+  // rows =  createData(
+  //     data[i].Status,
+  //     data[i].AddedAt,
+  //     data[i].Email,
+  //     data[i].Name,
+  //     data[i].SecurityScore,
+  //     data[i].SecurityScoreUpdatedAt,
+  //     data[i].DebugModeDate,
+  //     data[i].Status,
+  //     data[i].PushLastSentAt,
+  //   );
   }
 }
 
-export default App;
+export default function StickyHeadTable() {
+
+  const [email, setEmail] = React.useState();
+  const classes = useStyles();
+  const [isLoaded, setIsLoaded] = React.useState(false);
+  let url = "https://akitacloud-public-api.azurewebsites.net/api/public/enterprises/employees-list?email=" + email;
+
+  monday.api(`query { me { email } }`).then(res => {
+    setEmail(res.data.me.email);
+    console.log(res.data.me.email);
+  });
+
+  useEffect(() => {
+    axios.get(url, {
+      mode: 'no-cors',
+      })
+      .then(function (response) {
+        createRow(response.data)
+        console.log(rows);
+        setIsLoaded(true);
+        return response;
+      })
+      .catch(function (error) {
+        setIsLoaded(false);
+        console.log(error);
+      })
+      .then(function () {
+      });  
+    
+  })
+
+  return (
+    <Paper className={classes.root}>
+    {!isLoaded && (<p>loading...</p>)}
+    {isLoaded && (
+      <TableContainer className={classes.container}>
+        {email}
+        <Table stickyHeader aria-label="  table">
+          <TableHead>
+            <TableRow>
+              {columns.map((column) => (
+                <TableCell
+                  key={column.id}
+                  align={column.align}
+                  style={{ minWidth: column.minWidth }}
+                >
+                  {column.label}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {rows.map((row) => {
+              return (
+                <TableRow hover role="checkbox" tabIndex={-1} key={row.code}>
+                  {columns.map((column) => {
+                    const value = row[column.id];
+                    return (
+                      <TableCell key={column.id} align={column.align}>
+                        {column.format && typeof value === 'number' ? column.format(value) : value}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+          )}
+    </Paper>
+  );
+}
+

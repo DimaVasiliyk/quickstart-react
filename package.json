@@ -12,9 +12,11 @@
     "stop": "kill-port 8301 && kill-port 4049 && kill-port 4040"
   },
   "dependencies": {
+    "@material-ui/core": "^4.12.4",
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
+    "axios": "^0.27.2",
     "monday-sdk-js": "^0.1.2",
     "monday-ui-react-core": "0.0.48",
     "react": "^16.13.0",
